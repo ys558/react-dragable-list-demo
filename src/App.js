@@ -32,7 +32,7 @@ class Column extends Component {
                 innerRef={provided.innerRef}
                 {...provided.droppableProps}
               >
-                {this.props.task.map(task => <Task key={task.id} task={task}/> )}
+                {this.props.task.map((task, index) => <Task key={task.id} task={task} index={index}/> )}
                 {provided.placeholder}
               </ColumnTaskList>
             }
@@ -51,9 +51,9 @@ const TaskContainer = styled.div`
 class Task extends Component {
   render(){
     return <Draggable draggableId={this.props.task.id} index={this.props.index}>
-      <TaskContainer>
-        {this.props.task.content}
-      </TaskContainer>
+        {provided => <TaskContainer {...provided.draggableProps}>
+            {this.props.task.content}
+          </TaskContainer>}
     </Draggable> 
   }
 }
