@@ -1,18 +1,31 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import '@atlaskit/css-reset';
+import styled from 'styled-components';
 import { DragDropContext } from 'react-beautiful-dnd';
 import initialData from './initial-data';
 import Column from './column';
-import styled from 'styled-components';
 
 const Container = styled.div`
   display: flex;
 `;
+
 class TaskList extends React.Component {
   state = initialData;
 
+  onDragStart = start => {
+    const homeIndex = this.state.columnOrder.indexOf(start.source.droppableId);
+
+    this.setState({
+      homeIndex,
+    });
+  };
+
   onDragEnd = result => {
+    this.setState({
+      homeIndex: null,
+    });
+
     const { destination, source, draggableId } = result;
 
     if (!destination) {
@@ -26,16 +39,16 @@ class TaskList extends React.Component {
       return;
     }
 
-    const start = this.state.columns[source.droppableId];
-    const finish = this.state.columns[destination.droppableId];
+    const home = this.state.columns[source.droppableId];
+    const foreign = this.state.columns[destination.droppableId];
 
-    if (start === finish) {
-      const newTaskIds = Array.from(start.taskIds);
+    if (home === foreign) {
+      const newTaskIds = Array.from(home.taskIds);
       newTaskIds.splice(source.index, 1);
       newTaskIds.splice(destination.index, 0, draggableId);
 
-      const newColumn = {
-        ...start,
+      const newHome = {
+        ...home,
         taskIds: newTaskIds,
       };
 
@@ -43,7 +56,7 @@ class TaskList extends React.Component {
         ...this.state,
         columns: {
           ...this.state.columns,
-          [newColumn.id]: newColumn,
+          [newHome.id]: newHome,
         },
       };
 
@@ -51,27 +64,27 @@ class TaskList extends React.Component {
       return;
     }
 
-    // Moving from one list to another
-    const startTaskIds = Array.from(start.taskIds);
-    startTaskIds.splice(source.index, 1);
-    const newStart = {
-      ...start,
-      taskIds: startTaskIds,
+    // moving from one list to another
+    const homeTaskIds = Array.from(home.taskIds);
+    homeTaskIds.splice(source.index, 1);
+    const newHome = {
+      ...home,
+      taskIds: homeTaskIds,
     };
 
-    const finishTaskIds = Array.from(finish.taskIds);
-    finishTaskIds.splice(destination.index, 0, draggableId);
-    const newFinish = {
-      ...finish,
-      taskIds: finishTaskIds,
+    const foreignTaskIds = Array.from(foreign.taskIds);
+    foreignTaskIds.splice(destination.index, 0, draggableId);
+    const newForeign = {
+      ...foreign,
+      taskIds: foreignTaskIds,
     };
 
     const newState = {
       ...this.state,
       columns: {
         ...this.state.columns,
-        [newStart.id]: newStart,
-        [newFinish.id]: newFinish,
+        [newHome.id]: newHome,
+        [newForeign.id]: newForeign,
       },
     };
     this.setState(newState);
@@ -79,14 +92,28 @@ class TaskList extends React.Component {
 
   render() {
     return (
-      <DragDropContext onDragEnd={this.onDragEnd}>
+      <DragDropContext
+        onDragStart={this.onDragStart}
+        onDragEnd={this.onDragEnd}
+      >
         <Container>
-          {this.state.columnOrder.map(columnId => {
+          {this.state.columnOrder.map((columnId, index) => {
             const column = this.state.columns[columnId];
             const tasks = column.taskIds.map(
               taskId => this.state.tasks[taskId],
-            )
-            return <Column key={column.id} column={column} tasks={tasks} />;
+            );
+            
+            // isDropDisabled 不让往回放
+            const isDropDisabled = index < this.state.homeIndex;
+
+            return (
+              <Column
+                key={column.id}
+                column={column}
+                tasks={tasks}
+                isDropDisabled={isDropDisabled}
+              />
+            );
           })}
         </Container>
       </DragDropContext>
